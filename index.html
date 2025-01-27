@@ -1,199 +1,58 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuestionario Restringido</title>
-    <style>
-        /* Estilos generales */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(90deg, #ff7eb3, #8b5cf6);
-            color: #fff;
-            text-align: center;
-            overflow: hidden;
-        }
-
-        header, footer {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 10px;
-        }
-
-        .scroll-wr {
-            -webkit-overflow-scrolling: touch; /* Activar desplazamiento suave en dispositivos móviles */
-            overflow: auto; /* Permitir barra de desplazamiento si es necesario */
-            width: 100%;
-            height: 80vh; /* Ajusta la altura al 80% de la ventana */
-            margin-top: 20px;
-            box-sizing: border-box;
-        }
-
-        object {
-            width: 100%; /* Ajusta al 100% del ancho del contenedor */
-            height: 100%; /* Ajusta al 100% del alto del contenedor */
-            border: none; /* Elimina bordes */
-        }
-
-        h1 {
-            margin: 0;
-            padding: 10px;
-        }
-
-        .alert {
-            font-size: 1rem;
-            color: red;
-        }
-
-        /* Modal de advertencia */
-        #blockModal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 0, 0, 0.9); /* Fondo rojo semitransparente */
-            color: white;
-            text-align: center;
-            padding: 20px;
-            font-size: 24px;
-            z-index: 9999; /* Siempre encima */
-        }
-
-        #blockModal p {
-            margin: 50px 0;
-        }
-
-        /* Botón de pantalla completa */
-        #fullScreenBtn {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 50%;
-            height: 100%;
-            padding: 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 24px;
-            z-index: 1000;
-            transition: opacity 0.5s ease;
-        }
-
-        #fullScreenBtn:hover {
-            background-color: #0056b3;
-        }
-
-        #actionCounter {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 1000;
-        }
-
-        /* Contenedor del selector de formularios */
-        #formSelectorContainer {
-            margin: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Form Redirection</title>
+  <style>
+    /* Estilo para el overlay en caso de que quieras bloquear la página principal */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      z-index: 9999;
+      text-align: center;
+      color: white;
+      font-size: 20px;
+      padding-top: 20%;
+    }
+  </style>
 </head>
 <body>
+  <h1>Bienvenido</h1>
+  <p>Haz clic en el botón para abrir el formulario:</p>
 
-<!-- Botón para activar el modo pantalla completa -->
-<button id="fullScreenBtn">Comenzar</button>
+  <!-- Botón para abrir el formulario -->
+  <button onclick="openForm()">Abrir Formulario</button>
 
-<!-- Contador de acciones no permitidas -->
-<div id="actionCounter">Acciones no permitidas: 0</div>
+  <!-- Overlay para bloquear la página principal -->
+  <div id="overlay">
+    Por favor, completa el formulario en la nueva ventana.
+  </div>
 
-<!-- Contenedor del menú de selección de formularios -->
-<div id="formSelectorContainer">
-    <select id="formSelector">
-        <option value="https://forms.gle/ehd3WQHgbQtgtqD1A">Formulario 1</option>
-        <option value="https://docs.google.com/forms/d/e/1FAIpQLSfUZhyGmJrT3pf79K6TDjPayq3M5MVrERisE2aSgJFA7vRulA/viewform?usp=header">Formulario 2</option>
-        <option value="https://forms.gle/Bmcm5vtANv4Nz2ZA6">Formulario 3</option>
-        <option value="https://docs.google.com/forms/d/e/1FAIpQLSfD2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2/viewform?usp=sharing">Formulario 4</option>
-    </select>
-    <button id="acceptBtn">Aceptar</button>
-</div>
+  <script>
+    // URL del formulario
+    const formUrl = "https://forms.gle/YGKAfNeWnSoTYdHi9";
 
-<!-- Formulario de Google incrustado -->
-<div class="scroll-wr">
-    <object 
-        id="googleForm" 
-        data="https://forms.gle/ehd3WQHgbQtgtqD1A">
-    </object>
-</div>
+    // Detectar iPads
+    const isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 
-<!-- Modal de advertencia -->
-<div id="blockModal">
-    <p><h1>Has salido de la ventana.</h1></p>  
-    <p><h1>Regresa en <span id="timer">8</span> segundos o la prueba se bloqueará.</h1></p>
-    <p>Acción no permitida registrada</p>
-</div>
-
-<script>
-    // Lógica para detección de acciones no permitidas y actualización del formulario
-
-    let exitTimer;
-    let timeLeft = 8;
-    let isWarningVisible = false;
-    let actionCounter = parseInt(localStorage.getItem('actionCounter')) || 0;
-
-    // Actualizar el contador de acciones no permitidas
-    function updateActionCounter() {
-        actionCounter++;
-        localStorage.setItem('actionCounter', actionCounter);
-        document.getElementById('actionCounter').textContent = `Acciones no permitidas: ${actionCounter}`;
-        if (actionCounter % 6 === 0) {
-            window.location.replace('about:blank');
-        }
+    // Redirigir automáticamente si es un iPad
+    if (isIpad) {
+      window.location.href = formUrl;
     }
 
-    // Manejar eventos de visibilidad
-    window.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            updateActionCounter();
-            if (!isWarningVisible) {
-                isWarningVisible = true;
-                document.getElementById('blockModal').style.display = 'block';
-                exitTimer = setInterval(function() {
-                    if (timeLeft > 0) {
-                        timeLeft--;
-                        document.getElementById('timer').textContent = timeLeft;
-                    } else {
-                        clearInterval(exitTimer);
-                        alert('La prueba se ha bloqueado.');
-                        window.location.replace('about:blank');
-                    }
-                }, 1000);
-            }
-        } else {
-            if (isWarningVisible) {
-                isWarningVisible = false;
-                clearInterval(exitTimer);
-                timeLeft = 8;
-                document.getElementById('timer').textContent = timeLeft;
-                document.getElementById('blockModal').style.display = 'none';
-            }
-        }
-    });
-
-    // Cambiar el formulario según selección
-    document.getElementById('acceptBtn').addEventListener('click', function() {
-        const selectedForm = document.getElementById('formSelector').value;
-        document.getElementById('googleForm').data = selectedForm;
-        document.getElementById('formSelectorContainer').style.display = 'none';
-    });
-</script>
-<footer>
-    <p>No se permite tener otras pestañas o ventanas, ni realizar capturas ni salir de la pantalla de la prueba. Cualquier incumplimiento conlleva la anulación de la prueba.</p>
-</footer>
+    // Función para abrir el formulario en una nueva ventana
+    function openForm() {
+      // Mostrar overlay
+      document.getElementById('overlay').style.display = 'block';
+      // Abrir el formulario en una nueva pestaña
+      window.open(formUrl, "_blank", "noopener,noreferrer");
+    }
+  </script>
 </body>
 </html>
