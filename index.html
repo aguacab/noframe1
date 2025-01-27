@@ -3,55 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Form Redirection</title>
+  <title>Formulario Google</title>
   <style>
-    /* Estilo para el overlay en caso de que quieras bloquear la página principal */
-    #overlay {
+    /* Hacer que el iframe ocupe toda la pantalla */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Estilo opcional para simular una experiencia de pantalla completa */
+    #fullscreen-container {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: none;
       z-index: 9999;
-      text-align: center;
-      color: white;
-      font-size: 20px;
-      padding-top: 20%;
+      background-color: white;
     }
   </style>
 </head>
 <body>
-  <h1>Bienvenido</h1>
-  <p>Haz clic en el botón para abrir el formulario:</p>
-
-  <!-- Botón para abrir el formulario -->
-  <button onclick="openForm()">Abrir Formulario</button>
-
-  <!-- Overlay para bloquear la página principal -->
-  <div id="overlay">
-    Por favor, completa el formulario en la nueva ventana.
+  <div id="fullscreen-container">
+    <!-- El iframe embebe el formulario -->
+    <iframe src="https://forms.gle/YGKAfNeWnSoTYdHi9" allowfullscreen></iframe>
   </div>
 
   <script>
-    // URL del formulario
-    const formUrl = "https://forms.gle/YGKAfNeWnSoTYdHi9";
-
-    // Detectar iPads
+    // Detectar si el usuario está en un iPad
     const isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 
-    // Redirigir automáticamente si es un iPad
     if (isIpad) {
-      window.location.href = formUrl;
-    }
-
-    // Función para abrir el formulario en una nueva ventana
-    function openForm() {
-      // Mostrar overlay
-      document.getElementById('overlay').style.display = 'block';
-      // Abrir el formulario en una nueva pestaña
-      window.open(formUrl, "_blank", "noopener,noreferrer");
+      // Si es iPad, asegurarse de que el iframe ocupa toda la pantalla
+      document.getElementById('fullscreen-container').style.display = 'block';
+    } else {
+      // Opcional: Mensaje para usuarios que no están en iPad
+      alert('Para una mejor experiencia, usa un iPad.');
     }
   </script>
 </body>
