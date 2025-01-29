@@ -1,55 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Formulario Google</title>
-  <style>
-    /* Hacer que el iframe ocupe toda la pantalla */
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    iframe {
-      border: none;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Estilo opcional para simular una experiencia de pantalla completa */
-    #fullscreen-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 9999;
-      background-color: white;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Cuestionario Seguro</title>
+    <style>
+        /* Estilos mejorados para iOS */
+        body {
+            margin: 0;
+            padding: 0;
+            -webkit-touch-callout: none;
+            -webkit-text-size-adjust: none;
+            touch-action: manipulation;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        #container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        #iframe-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #googleForm {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+    </style>
 </head>
 <body>
-  <div id="fullscreen-container">
-    <!-- El iframe embebe el formulario -->
-    <iframe src="https://forms.gle/YGKAfNeWnSoTYdHi9" allowfullscreen></iframe>
-  </div>
+    <div id="container">
+        <div id="iframe-wrapper">
+            <iframe id="googleForm" src="about:blank" allow="fullscreen"></iframe>
+        </div>
+    </div>
+    
+    <div id="overlay">
+        <button id="startButton" style="padding: 20px; font-size: 24px;">
+            Iniciar Examen
+        </button>
+    </div>
 
-  <script>
-    // Detectar si el usuario está en un iPad
-    const isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+<script>
+// Configuración específica para iPad
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-    if (isIpad) {
-      // Si es iPad, asegurarse de que el iframe ocupa toda la pantalla
-      document.getElementById('fullscreen-container').style.display = 'block';
-    } else {
-      // Opcional: Mensaje para usuarios que no están en iPad
-      alert('Sólo para iPad.');
-   
+// Control de navegación
+let blocked = false;
+let attemptCount = 0;
+
+// Función para cargar el formulario
+function loadForm() {
+    const formURL = 'URL_DE_TU_FORMULARIO_GOOGLE';
+    document.getElementById('googleForm').src = formURL;
+    document.getElementById('overlay').style.display = 'none';
+    
+    // Forzar recarga si se detecta redirección
+    setInterval(() => {
+        if (!document.getElementById('googleForm').src.includes(formURL)) {
+            window.location.reload();
+        }
+    }, 1000);
+}
+
+// Controlador de eventos para iOS
+if (isIOS) {
+    document.getElementById('startButton').addEventListener('click', async () => {
+        try {
+            // Solicitar almacenamiento de cookies
+            if (document.hasStorageAccess) {
+                await document.requestStorageAccess();
+            }
+            loadForm();
+            enterFullscreen();
+        } catch (error) {
+            alert('Debes permitir el acceso para continuar');
+            window.location.reload();
+        }
+    });
+} else {
+    document.getElementById('startButton').addEventListener('click', () => {
+        loadForm();
+        enterFullscreen();
+    });
+}
+
+// Función de pantalla completa mejorada
+function enterFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+    else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
+    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+}
+
+// Detectar cambios de contexto
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) handleExit();
+});
+
+document.addEventListener('webkitfullscreenchange', () => {
+    if (!document.webkitFullscreenElement) handleExit();
+});
+
+function handleExit() {
+    if (!blocked) {
+        attemptCount++;
+        if (attemptCount >= 3) {
+            blocked = true;
+            window.location.replace('about:blank');
+        }
+        alert(`Intento no permitido (${attemptCount}/3)`);
+        enterFullscreen();
     }
-  </script>
+}
+
+// Bloquear acciones no deseadas
+window.addEventListener('beforeunload', (e) => {
+    if (!blocked) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) handleExit();
+});
+
+// Bloquear gestos y zoom
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('gesturechange', (e) => e.preventDefault());
+document.addEventListener('gestureend', (e) => e.preventDefault());
+
+// Configuración del iframe
+const iframe = document.getElementById('googleForm');
+iframe.addEventListener('load', () => {
+    try {
+        iframe.contentWindow.addEventListener('beforeunload', () => {
+            window.location.reload();
+        });
+    } catch (error) {
+        // Manejar error de política de mismo origen
+    }
+});
+</script>
 </body>
 </html>
