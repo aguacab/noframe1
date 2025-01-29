@@ -133,11 +133,11 @@ document.addEventListener('webkitfullscreenchange', () => {
 function handleExit() {
     if (!blocked) {
         attemptCount++;
-        if (attemptCount >= 3) {
+        if (attemptCount >= 6) {
             blocked = true;
             window.location.replace('about:blank');
         }
-        alert(`Intento no permitido (${attemptCount}/3)`);
+        alert(`Intento no permitido (${attemptCount}/6)`);
         enterFullscreen();
     }
 }
