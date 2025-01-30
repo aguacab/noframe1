@@ -2,174 +2,99 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Cuestionario Seguro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario Restringido</title>
     <style>
-        /* Estilos mejorados para iOS */
         body {
             margin: 0;
             padding: 0;
-            -webkit-touch-callout: none;
-            -webkit-text-size-adjust: none;
-            touch-action: manipulation;
-            overflow: hidden;
-            background: #000;
+            overflow: hidden; /* Evita el scroll */
+            font-family: Arial, sans-serif;
         }
-        
-        #container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        #iframe-wrapper {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        #googleForm {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            color: white;
+        #form-container {
+            width: 100vw;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 10000;
+        }
+        iframe {
+            width: 90%;
+            height: 90%;
+            border: none;
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="iframe-wrapper">
-            <iframe id="googleForm" src="about:blank" allow="fullscreen"></iframe>
-        </div>
-    </div>
-    
-    <div id="overlay">
-        <button id="startButton" style="padding: 20px; font-size: 24px;">
-            Iniciar Examen
-        </button>
+    <div id="form-container">
+        <iframe id="google-form" src="about:blank"></iframe>
     </div>
 
-<script>
-// Configuración específica para iPad
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    <script>
+        // Inicializar contador de acciones no permitidas desde localStorage
+        let forbiddenActionsCount = parseInt(localStorage.getItem('forbiddenActionsCount')) || 0;
 
-// Control de navegación
-let blocked = false;
-let attemptCount = 0;
+        // Mostrar el contador de acciones no permitidas en la consola al iniciar
+        console.log(`Total de acciones no permitidas: ${forbiddenActionsCount}`);
 
-// Función para cargar el formulario
-function loadForm() {
-    const formURL = 'https://forms.gle/YGKAfNeWnSoTYdHi9';
-    document.getElementById('googleForm').src = formURL;
-    document.getElementById('overlay').style.display = 'none';
-    
-    // Forzar recarga si se detecta redirección
-    setInterval(() => {
-        if (!document.getElementById('googleForm').src.includes(formURL)) {
-            window.location.reload();
+        // Función para mostrar una advertencia
+        function showWarning() {
+            alert('No está permitido abandonar esta página.');
         }
-    }, 1000);
-}
 
-// Controlador de eventos para iOS
-if (isIOS) {
-    document.getElementById('startButton').addEventListener('click', async () => {
-        try {
-            // Solicitar almacenamiento de cookies
-            if (document.hasStorageAccess) {
-                await document.requestStorageAccess();
-            }
-            loadForm();
-            enterFullscreen();
-        } catch (error) {
-            alert('Debes permitir el acceso para continuar');
-            window.location.reload();
-        }
-    });
-} else {
-    document.getElementById('startButton').addEventListener('click', () => {
-        loadForm();
-        enterFullscreen();
-    });
-}
-
-// Función de pantalla completa mejorada
-function enterFullscreen() {
-    const elem = document.documentElement;
-    if (elem.requestFullscreen) elem.requestFullscreen();
-    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-    else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
-    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-}
-
-// Detectar cambios de contexto
-document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) handleExit();
-});
-
-document.addEventListener('webkitfullscreenchange', () => {
-    if (!document.webkitFullscreenElement) handleExit();
-});
-
-function handleExit() {
-    if (!blocked) {
-        attemptCount++;
-        if (attemptCount >= 6) {
-            blocked = true;
-            window.location.replace('about:blank');
-        }
-        alert(`Intento no permitido (${attemptCount}/6)`);
-        enterFullscreen();
-    }
-}
-
-// Bloquear acciones no deseadas
-window.addEventListener('beforeunload', (e) => {
-    if (!blocked) {
-        e.preventDefault();
-        e.returnValue = '';
-    }
-});
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) handleExit();
-});
-
-// Bloquear gestos y zoom
-document.addEventListener('gesturestart', (e) => e.preventDefault());
-document.addEventListener('gesturechange', (e) => e.preventDefault());
-document.addEventListener('gestureend', (e) => e.preventDefault());
-
-// Configuración del iframe
-const iframe = document.getElementById('googleForm');
-iframe.addEventListener('load', () => {
-    try {
-        iframe.contentWindow.addEventListener('beforeunload', () => {
-            window.location.reload();
+        // Bloquear navegación fuera de la página
+        window.addEventListener('beforeunload', function (e) {
+            e.preventDefault();
+            e.returnValue = ''; // Esto mostrará un mensaje de advertencia al usuario
+            showWarning(); // También muestra una advertencia visual
         });
-    } catch (error) {
-        // Manejar error de política de mismo origen
-    }
-});
-</script>
+
+        window.addEventListener('blur', function () {
+            if (!document.hasFocus()) {
+                forbiddenActionsCount++;
+                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
+                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
+                showWarning(); // Muestra una advertencia visual
+            }
+        });
+
+        // Detección y prevención de combinaciones de teclas comunes para abrir herramientas de desarrollo
+        window.addEventListener('keydown', function (e) {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+                (e.ctrlKey && e.shiftKey && e.key === 'J') || 
+                (e.ctrlKey && e.key === 'u') ||
+                (e.metaKey && e.key === 'n') || // Nueva pestaña en macOS
+                (e.ctrlKey && e.key === 't') || // Nueva pestaña en Windows/Linux
+                (e.ctrlKey && e.key === 'w') || // Cerrar pestaña en Windows/Linux
+                (e.metaKey && e.key === 'w')    // Cerrar pestaña en macOS
+            ) {
+                forbiddenActionsCount++;
+                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
+                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
+                showWarning(); // Muestra una advertencia visual
+                e.preventDefault();
+            }
+        });
+
+        // Cargar el formulario de Google dentro del iframe
+        const googleFormUrl = 'https://forms.gle/YGKAfNeWnSoTYdHi9';
+        const formIframe = document.getElementById('google-form');
+        formIframe.src = googleFormUrl;
+
+        // Función para manejar la autenticación si es necesaria
+        async function handleAuthentication() {
+            // Aquí puedes agregar lógica de autenticación si es necesaria
+            // Por ejemplo, redirigir a una página de inicio de sesión antes de cargar el formulario
+        }
+
+        // Llamar a la función de autenticación si es necesaria
+        handleAuthentication();
+
+        // Actualización periódica del contador en la consola (opcional)
+        setInterval(() => {
+            console.log(`Total de acciones no permitidas: ${forbiddenActionsCount}`);
+        }, 5000); // Actualiza cada 5 segundos
+    </script>
 </body>
 </html>
