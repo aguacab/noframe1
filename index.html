@@ -77,6 +77,16 @@
             }
         });
 
+        // Detectar cambios en la visibilidad de la página
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                forbiddenActionsCount++;
+                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
+                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
+                showWarning(); // Muestra una advertencia visual
+            }
+        });
+
         // Cargar el formulario de Google dentro del iframe
         const googleFormUrl = 'https://forms.gle/YGKAfNeWnSoTYdHi9';
         const formIframe = document.getElementById('google-form');
@@ -95,6 +105,29 @@
         setInterval(() => {
             console.log(`Total de acciones no permitidas: ${forbiddenActionsCount}`);
         }, 5000); // Actualiza cada 5 segundos
+
+        // Función para mostrar el contador de acciones no permitidas al cargar la página
+        function displayForbiddenActionsCount() {
+            const countDisplay = document.createElement('div');
+            countDisplay.style.position = 'fixed';
+            countDisplay.style.bottom = '10px';
+            countDisplay.style.right = '10px';
+            countDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            countDisplay.style.color = 'white';
+            countDisplay.style.padding = '10px';
+            countDisplay.style.borderRadius = '5px';
+            countDisplay.style.zIndex = '1000';
+            countDisplay.textContent = `Acciones no permitidas: ${forbiddenActionsCount}`;
+            document.body.appendChild(countDisplay);
+
+            // Actualizar el contador cada vez que cambie
+            setInterval(() => {
+                countDisplay.textContent = `Acciones no permitidas: ${forbiddenActionsCount}`;
+            }, 1000);
+        }
+
+        // Llamar a la función para mostrar el contador
+        displayForbiddenActionsCount();
     </script>
 </body>
 </html>
